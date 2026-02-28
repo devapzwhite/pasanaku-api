@@ -2,7 +2,7 @@
 from fastapi import HTTPException, status
 
 
-class PasanakulException(Exception):
+class PasanakuException(Exception):
     """Base exception for all domain errors."""
 
     def __init__(self, message: str) -> None:
@@ -10,29 +10,37 @@ class PasanakulException(Exception):
         super().__init__(message)
 
 
-class EntityNotFoundError(PasanakulException):
+class EntityNotFoundError(PasanakuException):
     """Raised when a requested entity does not exist in the database."""
 
 
-class DuplicateEntityError(PasanakulException):
+class DuplicateEntityError(PasanakuException):
     """Raised when attempting to create a duplicate entity."""
 
 
-class UnauthorizedError(PasanakulException):
+class UnauthorizedError(PasanakuException):
     """Raised when a user lacks permission to perform an action."""
 
 
-class InvalidCredentialsError(PasanakulException):
+class InvalidCredentialsError(PasanakuException):
     """Raised when authentication credentials are invalid."""
 
 
-class InactiveUserError(PasanakulException):
+class InactiveUserError(PasanakuException):
     """Raised when an inactive user attempts to authenticate."""
 
 
-# ---------------------------------------------------------------------------
+class NotFoundError(EntityNotFoundError):
+    """Alias for EntityNotFoundError - raised when a resource is not found."""
+
+
+class ForbiddenError(UnauthorizedError):
+    """Raised when a user is authenticated but lacks resource-level permission."""
+
+
+# ------------------------------------------------------------------
 # HTTP exception factories (translate domain errors -> HTTP responses)
-# ---------------------------------------------------------------------------
+# ------------------------------------------------------------------
 
 def not_found_exception(resource: str, identifier: str | int) -> HTTPException:
     """Return a 404 HTTPException with a descriptive message."""
@@ -43,29 +51,16 @@ def not_found_exception(resource: str, identifier: str | int) -> HTTPException:
 
 
 def conflict_exception(detail: str) -> HTTPException:
-    """Return a 409 HTTPException for duplicate resource errors."""
+    """Return a 409 HTTPException."""
     return HTTPException(
         status_code=status.HTTP_409_CONFLICT,
         detail=detail,
     )
 
 
-def unauthorized_exception(detail: str = "Unauthorized") -> HTTPException:
+def forbidden_exception(detail: str) -> HTTPException:
     """Return a 403 HTTPException."""
     return HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail=detail,
     )
-
-
-__all__ = [
-    "PasanakulException",
-    "EntityNotFoundError",
-    "DuplicateEntityError",
-    "UnauthorizedError",
-    "InvalidCredentialsError",
-    "InactiveUserError",
-    "not_found_exception",
-    "conflict_exception",
-    "unauthorized_exception",
-]
