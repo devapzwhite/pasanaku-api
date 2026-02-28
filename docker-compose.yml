@@ -1,0 +1,52 @@
+# ============================================================
+# Pasanaku API - Docker Compose (development)
+# Usage: docker compose up -d
+# ============================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # PostgreSQL database
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: pasanaku_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pasanaku_user
+      POSTGRES_PASSWORD: pasanaku_pass
+      POSTGRES_DB: pasanaku_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pasanaku_user -d pasanaku_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ---------------------------------------------------------------------------
+  # FastAPI application
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pasanaku_api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://pasanaku_user:pasanaku_pass@db:5432/pasanaku_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  postgres_data:
+    driver: local
